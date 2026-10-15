@@ -1,0 +1,39 @@
+{
+  "name": "whatsapp-bot",
+  "version": "1.0.0",
+  "description": "Secure, modular WhatsApp bot built with Baileys v7.0.0-rc14",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit",
+    "check": "node --check src/index.js src/config.js src/connection.js src/handler.js src/database/index.js src/services/settings.js src/services/permissions.js src/services/logger.js src/utils/message.js src/commands/general.js src/commands/group.js src/commands/admin.js src/commands/owner.js src/events/messages.js src/events/connection.js src/events/group-updates.js"
+  },
+  "dependencies": {
+    "@hapi/boom": "^9.1.4",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "dotenv": "^16.4.5",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "transform": {},
+    "testEnvironment": "node",
+    "setupFiles": ["./tests/jest.setup.js"],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "tests/jest.setup.js"
+    ]
+  }
+}
