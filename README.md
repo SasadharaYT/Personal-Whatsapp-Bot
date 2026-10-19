@@ -5,13 +5,13 @@
 </p>
 
 <p align="center">
-  A secure, production-ready WhatsApp bot built with <strong>Node.js (ESM)</strong> and <strong>@whiskeysockets/baileys</strong>.
+  A secure, feature-rich, production-ready WhatsApp bot built with <strong>Node.js (ESM)</strong>, <strong>@whiskeysockets/baileys v7.0.0-rc14</strong>, <strong>Google Gemini AI</strong>, <strong>yt-dlp Media Downloader</strong>, and <strong>Pexels Image Engine</strong>.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg" alt="Node Version"/>
   <img src="https://img.shields.io/badge/baileys-7.0.0--rc14-blue.svg" alt="Baileys Version"/>
-  <img src="https://img.shields.io/badge/tests-69%20passed-success.svg" alt="Tests"/>
+  <img src="https://img.shields.io/badge/tests-128%20passed-success.svg" alt="Tests"/>
   <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"/>
 </p>
 
@@ -23,14 +23,19 @@
 
 - [✨ Features](#-features)
 - [⚡ Quick Start](#-quick-start)
+- [🪟 Windows Setup Guide (yt-dlp & ffmpeg)](#-windows-setup-guide-yt-dlp--ffmpeg)
 - [📱 Pairing with WhatsApp](#-pairing-with-whatsapp)
 - [⚙️ Configuration (`.env`)](#️-configuration-env)
 - [🎮 Commands Guide](#-commands-guide)
-  - [General Commands](#1-general-commands-everyone)
-  - [Group Commands](#2-group-commands-group-admins)
-  - [Admin Moderation](#3-admin-moderation-group-admins)
-  - [Owner Commands](#4-owner-commands-bot-owner)
-- [🛡️ Security & Privacy](#️-security--privacy)
+  - [1. General Commands](#1-general-commands-everyone)
+  - [2. Gemini AI Commands](#2-gemini-ai-commands)
+  - [3. YouTube Media Commands](#3-youtube-media-commands)
+  - [4. Image & Wallpaper Commands](#4-image--wallpaper-commands)
+  - [5. System & Health Commands](#5-system--health-commands)
+  - [6. Group Commands](#6-group-commands-group-admins)
+  - [7. Admin Moderation](#7-admin-moderation-group-admins)
+  - [8. Owner Commands](#8-owner-commands-bot-owner)
+- [🛡️ Security & Safety Controls](#️-security--safety-controls)
 - [🧪 Testing & Scripts](#-testing--scripts)
 - [🚢 Production Deployment](#-production-deployment)
 - [❓ Troubleshooting](#-troubleshooting)
@@ -39,12 +44,15 @@
 
 ## ✨ Features
 
-- 🔐 **Secure & Private:** Multi-device auth session (`auth/`) and environment keys (`.env`) are strictly git-ignored.
-- ⚡ **Multi-Prefix & Prefix-less:** Supports `.`, `!`, `/`, and `#`, plus direct prefix-less commands (`menu`, `ping`) in private chats.
-- 👥 **Group Moderation:** Anti-link protection, warning strikes, kick/promote/demote, and member tagging.
-- 👋 **Automated Welcome/Goodbye:** Dynamic greeting templates with custom member and group placeholders.
+- 🧠 **Google Gemini AI:** Intelligent conversations using the official `@google/genai` SDK with multi-turn context, summarization, translation, topic explanation, and per-user privacy.
+- 🎬 **YouTube Media Downloader:** Download MP4 videos and MP3 audio tracks via controlled `yt-dlp` subprocess with job queuing, size caps, and automatic temporary file cleanup.
+- 🖼️ **Pexels Wallpaper & Image Search:** Instant phone wallpapers (portrait) and high-resolution photo searches with photographer attribution and magic-byte verification.
+- 🔐 **Secure & Private:** Multi-device auth session (`auth/`), temporary files (`temp/`), and keys (`.env`) are strictly git-ignored.
+- 🛡️ **SSRF & Input Safety:** Strict URL validation, private IP blocking (RFC 1918 / localhost / cloud metadata), file magic-byte inspection, and disk quota enforcement.
+- ⏱️ **Token-Bucket Rate Limiter:** Per-user and per-group burst/replenish rate limiting across AI, media downloads, and image searches.
+- ⚡ **Multi-Prefix & Prefix-less:** Supports `.`, `!`, `/`, and `#`, plus direct prefix-less commands in private chats.
+- 👥 **Group Moderation:** Anti-link protection, warning strikes, kick/promote/demote, member tagging, and welcome/goodbye greetings.
 - 👑 **Role-Based Access Control:** Live permissions fetched directly from WhatsApp metadata to prevent stale privilege escalation.
-- 🛡️ **Anti-Loop Engine:** Tracks outgoing bot messages to prevent self-echo loops while allowing owner commands typed from phones.
 - 💾 **Atomic Database:** Zero-dependency file-based storage with atomic writes to eliminate race conditions.
 
 ---
@@ -55,6 +63,7 @@
 - **Node.js** `>= 20.0.0`
 - **npm** `>= 9.0.0`
 - A smartphone with WhatsApp installed
+- *(Optional for media features)* **yt-dlp** and **ffmpeg** (see [Windows Setup Guide](#-windows-setup-guide-yt-dlp--ffmpeg))
 
 ### 2. Installation
 
@@ -70,11 +79,13 @@ npm install
 cp .env.example .env
 ```
 
-### 3. Configure Your Number
-Open `.env` and set your phone number with your country code (no `+`, spaces, or dashes):
+### 3. Configure Your Environment
+Open `.env` and configure your phone number and API keys:
 
 ```dotenv
-OWNER_NUMBERS=1234567890
+OWNER_NUMBERS=94710504147
+GEMINI_API_KEY=your_gemini_api_key_here
+PEXELS_API_KEY=your_pexels_api_key_here
 ```
 
 ### 4. Start the Bot
@@ -82,6 +93,40 @@ OWNER_NUMBERS=1234567890
 ```bash
 npm start
 ```
+
+---
+
+## 🪟 Windows Setup Guide (yt-dlp & ffmpeg)
+
+For YouTube downloads (`.ytmp4`, `.ytmp3`, `.ytinfo`), the bot runs `yt-dlp` and `ffmpeg` directly on your Windows laptop.
+
+### Easy Installation via winget (Windows Package Manager)
+
+Open **PowerShell** or **Command Prompt** as Administrator:
+
+```powershell
+# Install yt-dlp
+winget install yt-dlp.yt-dlp
+
+# Install ffmpeg
+winget install Gyan.FFmpeg
+```
+
+### Alternative Installation via Chocolatey
+
+```powershell
+choco install yt-dlp ffmpeg -y
+```
+
+### Verify Installation
+After installing, close and reopen your terminal, then verify:
+
+```powershell
+where yt-dlp
+where ffmpeg
+```
+
+If both commands return executable paths, the bot will automatically detect and use them!
 
 ---
 
@@ -94,11 +139,11 @@ npm start
    - **Settings** > **Linked Devices** > **Link a Device**.
 4. Scan the QR code printed in your terminal.
 
-### Option B: 8-Digit Pairing Code (Recommended for VPS / Headless)
+### Option B: 8-Digit Pairing Code (Recommended)
 1. In `.env`, configure:
    ```dotenv
    USE_PAIRING_CODE=true
-   PAIRING_PHONE_NUMBER=1234567890
+   PAIRING_PHONE_NUMBER=94710504147
    ```
 2. Run `npm start`.
 3. A pairing code (e.g. `ABCD-1234`) will appear in your console.
@@ -124,14 +169,20 @@ npm start
 | `AUTO_READ` | No | `false` | Automatically send blue read receipts |
 | `MARK_ONLINE` | No | `true` | Show account as online when socket connects |
 | `ANTILINK_WARN_LIMIT` | No | `3` | Max warnings before auto-kicking link offenders |
+| `GEMINI_API_KEY` | Recommended | — | Google Gemini API key from [Google AI Studio](https://aistudio.google.com/) |
+| `GEMINI_MODEL` | No | `gemini-2.0-flash` | Gemini model name |
+| `AI_ENABLED` | No | `true` | Global enable/disable switch for AI commands |
+| `PEXELS_API_KEY` | Recommended | — | Free image API key from [Pexels](https://www.pexels.com/api/) |
+| `MEDIA_ENABLED` | No | `true` | Global enable/disable switch for media downloads |
+| `MAX_MEDIA_SIZE_MB` | No | `50` | Maximum media file download size in MB |
+| `MAX_CONCURRENT_DOWNLOADS` | No | `2` | Maximum concurrent video downloads |
+| `TEMP_DIR` | No | `temp` | Directory for in-flight media downloads |
 
 ---
 
 ## 🎮 Commands Guide
 
 ### 1. General Commands (Everyone)
-Available in both direct chats and groups.
-
 | Command | Aliases | Description |
 |---|---|---|
 | `.menu` | `help`, `commands` | Display full command catalogue |
@@ -147,9 +198,59 @@ Available in both direct chats and groups.
 
 ---
 
-### 2. Group Commands (Group Admins)
-Manage group members and automated greetings.
+### 2. Gemini AI Commands
+Powered by Google Gemini 2.0. Supports conversational context, quoted message inputs, and automatic safety filtration.
 
+| Command | Aliases | Description |
+|---|---|---|
+| `.ai <prompt>` | `ask`, `gemini`, `chat` | Chat with Gemini (conversation history is preserved) |
+| `.summarize [text]` | `summary`, `sum` | Summarise provided text or a quoted message |
+| `.translate <lang> [text]` | `tr` | Translate text or a quoted message to any language |
+| `.explain <topic>` | `eli5` | Explain a concept in simple, accessible language |
+| `.clearai` | `resetai`, `forget` | Reset your conversation history with Gemini |
+| `.aistatus` | `geministatus` | View Gemini service status, model, and active sessions |
+| `.aihelp` | — | Guide and examples for AI commands |
+
+---
+
+### 3. YouTube Media Commands
+Downloads YouTube media safely via `yt-dlp` subprocess.
+
+| Command | Aliases | Description |
+|---|---|---|
+| `.ytinfo <url>` | `yinfo`, `videoinfo` | Fetch YouTube video metadata, length, views, and uploader |
+| `.ytmp4 <url>` | `ytvideo`, `ytdl` | Download YouTube video as MP4 (up to 50MB) |
+| `.ytmp3 <url>` | `ytaudio`, `yta` | Download audio track as MP3 (up to 50MB) |
+| `.ythelp` | `mediahelp` | Usage rules and limits for media downloads |
+
+---
+
+### 4. Image & Wallpaper Commands
+High-resolution photos and phone wallpapers via Pexels with photographer credit.
+
+| Command | Aliases | Description |
+|---|---|---|
+| `.wallpaper [category]` | `wp`, `wall` | Search portrait phone wallpapers (e.g. `.wallpaper anime`, `.wallpaper nature`) |
+| `.image <query>` | `img`, `pic` | Search general high-resolution photos |
+| `.imageinfo` | `curated` | Fetch a random curated photo with photographer credit |
+| `.imagehelp` | `wallpaperhelp` | View popular wallpaper categories and search tips |
+
+---
+
+### 5. System & Health Commands
+Diagnostics, queue inspection, and feature switches.
+
+| Command | Aliases | Permission | Description |
+|---|---|:---:|---|
+| `.health` | `syshealth`, `sys` | Everyone | System dashboard: memory, disk space, AI status, yt-dlp, ffmpeg |
+| `.mediaqueue` | `queue`, `jobs` | Everyone | View active media downloads and queue progress |
+| `.cancelmedia <id>` | `canceljob` | User / Admin | Cancel an in-progress download job |
+| `.toggleai on\|off\|status` | — | Admin / Owner | Enable or disable AI commands in this group |
+| `.togglemedia on\|off\|status` | — | Bot Owner | Enable or disable media downloading globally |
+
+---
+
+### 6. Group Commands (Group Admins)
 | Command | Permission | Description |
 |---|:---:|---|
 | `.tagall [msg]` | 🛡️ Admin | Mention all members in formatted batches |
@@ -166,7 +267,7 @@ Manage group members and automated greetings.
 
 ---
 
-### 3. Admin Moderation (Group Admins)
+### 7. Admin Moderation (Group Admins)
 *Note: Bot account must also have group admin privileges.*
 
 | Command | Description |
@@ -188,7 +289,7 @@ Manage group members and automated greetings.
 
 ---
 
-### 4. Owner Commands (Bot Owner)
+### 8. Owner Commands (Bot Owner)
 Restricted exclusively to phone numbers listed in `OWNER_NUMBERS`.
 
 | Command | Description |
@@ -206,13 +307,15 @@ Restricted exclusively to phone numbers listed in `OWNER_NUMBERS`.
 
 ---
 
-## 🛡️ Security & Privacy
+## 🛡️ Security & Safety Controls
 
-This codebase adheres to strict security standards:
-- **No Credentials in Git:** `.env`, `.env.*`, and `auth/` are blocked in `.gitignore`.
-- **Live Metadata Verification:** Admin status is always re-verified directly against WhatsApp group metadata to prevent privilege escalation.
-- **Strict Owner Verification:** Owner privileges verify phone digits against `OWNER_NUMBERS`; group admin status never grants owner privileges.
-- **Message Scrubbing:** Raw session secrets and QR buffers are never written to disk logs.
+- **SSRF Protection:** Validates URLs against private IP ranges (RFC 1918, `localhost`, loopbacks, cloud metadata `169.254.169.254`).
+- **Controlled Subprocess Spawning:** `yt-dlp` runs using `child_process.spawn` with `shell: false` and fixed arguments, preventing command-injection attacks.
+- **File Magic-Byte Inspection:** Verifies downloaded files match expected binary signatures (JPEG, PNG, WebP, MP4, MP3) prior to saving or sending.
+- **Disk Space Safeguards:** Checks partition free space before allowing new downloads (requires ≥ 500MB free).
+- **Automatic Temp Cleanup:** Downloads are stored in `temp/` with unguessable random names and deleted immediately in `finally` blocks on success, failure, or cancellation.
+- **Prompt Isolation:** Gemini AI system prompts are strictly isolated in service logic and never returned to users.
+- **Rate Limiting:** Token-bucket rate limiters prevent API quota exhaustion or denial of service across AI, downloads, and image searches.
 
 ---
 
@@ -222,24 +325,27 @@ This codebase adheres to strict security standards:
 |---|---|
 | `npm start` | Run bot in production mode |
 | `npm run dev` | Run with file watcher (`--watch`) for development |
-| `npm test` | Execute complete Jest test suite (mocked socket) |
-| `npm run check` | Run static Node syntax analysis across all modules |
+| `npm test` | Run complete 128-test Jest suite (mocked socket & APIs) |
+| `npm run check` | Run static Node syntax analysis across all 23 source files |
 
 ---
 
 ## 🚢 Production Deployment
 
-### PM2 Process Manager (Recommended)
-Keep your bot alive 24/7 with automatic restarts:
+### Windows Deployment (Service via PM2 or Task Scheduler)
 
-```bash
+```powershell
+# Install PM2 globally
 npm install -g pm2
+
+# Start the bot under PM2
 pm2 start src/index.js --name "whatsapp-bot"
+
+# Save configuration
 pm2 save
-pm2 startup
 ```
 
-### Systemd Service (Ubuntu/Debian)
+### Linux Deployment (Systemd)
 Create `/etc/systemd/system/whatsapp-bot.service`:
 
 ```ini
@@ -260,13 +366,6 @@ EnvironmentFile=/home/ubuntu/MyBot/.env
 WantedBy=multi-user.target
 ```
 
-Enable and start:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable whatsapp-bot
-sudo systemctl start whatsapp-bot
-```
-
 ---
 
 ## ❓ Troubleshooting
@@ -275,7 +374,7 @@ sudo systemctl start whatsapp-bot
 <summary><strong>1. Bot does not respond to my messages</strong></summary>
 
 - Verify your phone number in `.env` is formatted with country code and digits only (e.g. `94710504147`, not `+94 71 050 4147`).
-- Check that the process is running with `pm2 status` or checking your terminal.
+- Check that the process is running in your terminal.
 - Try testing with `.ping` or simple `ping`.
 </details>
 
@@ -288,9 +387,19 @@ sudo systemctl start whatsapp-bot
 </details>
 
 <details>
-<summary><strong>3. Bot cannot kick or delete messages in a group</strong></summary>
+<summary><strong>3. YouTube downloads report "yt-dlp is not installed"</strong></summary>
 
-- WhatsApp requires the bot's account to be promoted to **Group Admin** to delete messages from other participants or remove members.
+- Run `winget install yt-dlp.yt-dlp` in PowerShell (Admin).
+- Verify with `where yt-dlp`.
+- Restart your terminal and bot process.
+</details>
+
+<details>
+<summary><strong>4. Gemini AI reports "API key is not configured"</strong></summary>
+
+- Obtain a free API key at [Google AI Studio](https://aistudio.google.com/).
+- Set `GEMINI_API_KEY=your_key` in `.env`.
+- Restart the bot.
 </details>
 
 ---

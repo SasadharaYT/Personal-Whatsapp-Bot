@@ -10,7 +10,7 @@
  */
 
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { parseMessage, reply, botSentIds } from './utils/message.js';
 import { isOwner, isGroupAdmin, isUserBlocked, isGroupMuted } from './services/permissions.js';
 import { getGlobalSettings } from './services/settings.js';
@@ -240,14 +240,23 @@ export async function handleMessage(rawMsg, sock) {
  * Each module must export an array of CommandDef objects as default.
  */
 export async function loadCommands() {
-  // Use file:// paths resolved from handler.js location for reliable ESM imports
   const cmdDir = path.join(__dirname, 'commands');
-  const files  = ['general.js', 'group.js', 'admin.js', 'owner.js'];
+  const files  = [
+    'general.js',
+    'group.js',
+    'admin.js',
+    'owner.js',
+    'ai.js',
+    'media.js',
+    'image.js',
+    'system.js',
+  ];
 
   for (const file of files) {
     const modPath = path.join(cmdDir, file);
     try {
-      const mod = await import(`file://${modPath}`);
+      const fileUrl = pathToFileURL(modPath).href;
+      const mod = await import(fileUrl);
       const defs = mod.default ?? mod.commands ?? [];
       for (const cmd of defs) {
         registerCommand(cmd);

@@ -159,6 +159,48 @@ export async function send(sock, jid, text) {
 }
 
 /**
+ * Send an image message.
+ */
+export async function sendImage(sock, ctx, buffer, caption = '') {
+  let sent;
+  try {
+    sent = await sock.sendMessage(ctx.chat, { image: buffer, caption }, { quoted: ctx.raw });
+  } catch {
+    sent = await sock.sendMessage(ctx.chat, { image: buffer, caption });
+  }
+  if (sent?.key?.id) recordBotSent(sent.key.id);
+  return sent;
+}
+
+/**
+ * Send a video message.
+ */
+export async function sendVideo(sock, ctx, buffer, caption = '') {
+  let sent;
+  try {
+    sent = await sock.sendMessage(ctx.chat, { video: buffer, caption, mimetype: 'video/mp4' }, { quoted: ctx.raw });
+  } catch {
+    sent = await sock.sendMessage(ctx.chat, { video: buffer, caption, mimetype: 'video/mp4' });
+  }
+  if (sent?.key?.id) recordBotSent(sent.key.id);
+  return sent;
+}
+
+/**
+ * Send an audio message.
+ */
+export async function sendAudio(sock, ctx, buffer) {
+  let sent;
+  try {
+    sent = await sock.sendMessage(ctx.chat, { audio: buffer, mimetype: 'audio/mpeg', ptt: false }, { quoted: ctx.raw });
+  } catch {
+    sent = await sock.sendMessage(ctx.chat, { audio: buffer, mimetype: 'audio/mpeg', ptt: false });
+  }
+  if (sent?.key?.id) recordBotSent(sent.key.id);
+  return sent;
+}
+
+/**
  * Format uptime in human-readable form.
  */
 export function formatUptime(ms) {

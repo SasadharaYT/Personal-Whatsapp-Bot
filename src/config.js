@@ -62,6 +62,18 @@ const raw = {
   markOnline:           optional('MARK_ONLINE', 'true'),
   blockedDomains:       optional('BLOCKED_DOMAINS', ''),
   antilinkWarnLimit:    optional('ANTILINK_WARN_LIMIT', '3'),
+
+  /* AI */
+  geminiApiKey:         optional('GEMINI_API_KEY'),
+  geminiModel:          optional('GEMINI_MODEL', 'gemini-2.0-flash'),
+  aiEnabled:            optional('AI_ENABLED', 'true'),
+
+  /* Media & Image */
+  imageProviderApiKey:    optional('PEXELS_API_KEY'),
+  mediaEnabled:           optional('MEDIA_ENABLED', 'true'),
+  maxMediaSizeMb:         optional('MAX_MEDIA_SIZE_MB', '50'),
+  maxConcurrentDownloads: optional('MAX_CONCURRENT_DOWNLOADS', '2'),
+  tempDir:                optional('TEMP_DIR', 'temp'),
 };
 
 // Validate owner numbers
@@ -82,6 +94,7 @@ const config = {
   authDir: path.resolve(ROOT, raw.authDir),
   dataDir: path.resolve(ROOT, raw.dataDir),
   logsDir: path.resolve(ROOT, 'logs'),
+  tempDir: path.resolve(ROOT, raw.tempDir || 'temp'),
 
   /* Logging */
   logLevel: ['trace','debug','info','warn','error','fatal','silent'].includes(raw.logLevel)
@@ -102,6 +115,17 @@ const config = {
     ? raw.blockedDomains.split(',').map(d => d.trim().toLowerCase()).filter(Boolean)
     : [],
   antilinkWarnLimit: Math.max(1, parseInt(raw.antilinkWarnLimit, 10) || 3),
+
+  /* AI */
+  geminiApiKey: raw.geminiApiKey,
+  geminiModel:  raw.geminiModel || 'gemini-2.0-flash',
+  aiEnabled:    raw.aiEnabled !== 'false',
+
+  /* Media & Image */
+  imageProviderApiKey:    raw.imageProviderApiKey,
+  mediaEnabled:           raw.mediaEnabled !== 'false',
+  maxMediaSizeMb:         Math.max(1, parseInt(raw.maxMediaSizeMb, 10) || 50),
+  maxConcurrentDownloads: Math.max(1, parseInt(raw.maxConcurrentDownloads, 10) || 2),
 
   /* Derived helpers */
   isOwner(jid) {
