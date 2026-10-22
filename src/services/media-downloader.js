@@ -101,7 +101,7 @@ async function locateExecutable(name, isWin) {
 
       if (r.code === 0 && r.stdout.trim()) {
         const found = r.stdout.trim().split(/\r?\n/)[0].trim();
-        if (await verifyExecutable(found)) {
+        if (await verifyExecutable(found, name)) {
           logger.info({ path: found }, `Found ${name}`);
           return found;
         }
@@ -114,7 +114,7 @@ async function locateExecutable(name, isWin) {
     for (const fallback of LINUX_FALLBACK_PATHS[name]) {
       try {
         await fs.access(fallback, fs.constants?.X_OK ?? 1 /* fs.constants.X_OK */);
-        if (await verifyExecutable(fallback)) {
+        if (await verifyExecutable(fallback, name)) {
           logger.info({ path: fallback }, `Found ${name} at fallback path`);
           return fallback;
         }
@@ -127,13 +127,20 @@ async function locateExecutable(name, isWin) {
 }
 
 /**
- * Quick smoke-test: run `<executable> --version` and check exit code 0.
+ * Quick smoke-test: run executable version command and check exit code 0.
+ * ffmpeg uses single dash `-version`; yt-dlp uses double dash `--version`.
  * Catches cases where the file exists but is not actually executable
  * (e.g. broken symlink, wrong architecture).
  */
-async function verifyExecutable(execPath) {
+async function verifyExecutable(execPath, name = '') {
   try {
-    const r = await runSimple(execPath, ['--version'], 5000);
+    const primaryArg = name === 'ffmpeg' ? '-version' : '--version';
+    let r = await runSimple(execPath, [primaryArg], 5000);
+    if (r.code === 0) return true;
+
+    // Fallback in case executable supports the alternative flag
+    const altArg = name === 'ffmpeg' ? '--version' : '-version';
+    r = await runSimple(execPath, [altArg], 5000);
     return r.code === 0;
   } catch {
     return false;

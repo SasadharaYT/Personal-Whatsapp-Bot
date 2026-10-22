@@ -10,6 +10,7 @@ process.env.AUTH_DIR      = 'auth';
 process.env.NODE_ENV      = 'test';
 process.env.OLLAMA_API_KEY = 'test_ollama_key_123';
 process.env.OLLAMA_MODEL = 'gemma4:31b-cloud';
+process.env.IMAGE_PROVIDER = 'pexels';
 process.env.PEXELS_API_KEY = 'test_pexels_key_123';
 process.env.AI_ENABLED     = 'true';
 process.env.MEDIA_ENABLED  = 'true';
