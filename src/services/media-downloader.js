@@ -42,16 +42,21 @@ let execsChecked = false;
 /* ── Executable discovery ──────────────────────────────────────────────── */
 
 /**
- * Find yt-dlp and ffmpeg on the system PATH (Windows `where`).
+ * Find yt-dlp and ffmpeg on the system PATH.
  * Called lazily; results are cached.
  */
 async function findExecutables() {
   if (execsChecked) return;
   execsChecked = true;
 
-  for (const name of ['yt-dlp', 'yt-dlp.exe']) {
+  const lookupCommand = process.platform === 'win32' ? 'where.exe' : 'which';
+  const executableNames = process.platform === 'win32'
+    ? ['yt-dlp', 'yt-dlp.exe']
+    : ['yt-dlp'];
+
+  for (const name of executableNames) {
     try {
-      const r = await runSimple('where', [name], 5000);
+      const r = await runSimple(lookupCommand, [name], 5000);
       if (r.code === 0 && r.stdout.trim()) {
         ytDlpPath = r.stdout.trim().split(/\r?\n/)[0].trim();
         logger.info({ path: ytDlpPath }, 'Found yt-dlp');
@@ -60,9 +65,10 @@ async function findExecutables() {
     } catch { /* continue */ }
   }
 
-  for (const name of ['ffmpeg', 'ffmpeg.exe']) {
+  const ffmpegNames = process.platform === 'win32' ? ['ffmpeg', 'ffmpeg.exe'] : ['ffmpeg'];
+  for (const name of ffmpegNames) {
     try {
-      const r = await runSimple('where', [name], 5000);
+      const r = await runSimple(lookupCommand, [name], 5000);
       if (r.code === 0 && r.stdout.trim()) {
         ffmpegPath = r.stdout.trim().split(/\r?\n/)[0].trim();
         logger.info({ path: ffmpegPath }, 'Found ffmpeg');
@@ -93,7 +99,7 @@ function runSimple(cmd, args, timeoutMs = 10_000) {
 export async function getVideoInfo(url) {
   if (!isValidYouTubeUrl(url)) return { success: false, error: 'Invalid YouTube URL. Only youtube.com and youtu.be links are supported.' };
   await findExecutables();
-  if (!ytDlpPath) return { success: false, error: 'yt-dlp is not installed. See the README for installation instructions.' };
+  if (!ytDlpPath) return { success: false, error: missingYtDlpMessage() };
 
   try {
     const r = await runSimple(ytDlpPath, [
@@ -142,7 +148,7 @@ export async function download(url, type, senderJid, onProgress) {
   if (!isValidYouTubeUrl(url)) return { success: false, error: 'Invalid YouTube URL. Only youtube.com and youtu.be links are supported.' };
   await findExecutables();
 
-  if (!ytDlpPath)        return { success: false, error: 'yt-dlp is not installed. See the README for installation instructions.' };
+  if (!ytDlpPath)        return { success: false, error: missingYtDlpMessage() };
   if (!config.mediaEnabled) return { success: false, error: 'Media downloads are currently disabled.' };
 
   // ── Rate limit ────────────────────────────────────────────────────────
@@ -351,6 +357,16 @@ function classifyYtDlpError(stderr) {
   if (stderr.includes('members-only'))                      return 'This video is for channel members only.';
   if (stderr.includes('premium'))                           return 'This video requires YouTube Premium.';
   return 'Download failed. The video may be unavailable or restricted.';
+}
+
+function missingYtDlpMessage() {
+  if (process.platform === 'linux') {
+    return 'yt-dlp was not found on PATH. On Ubuntu, install it with: sudo apt update && sudo apt install -y yt-dlp ffmpeg';
+  }
+  if (process.platform === 'win32') {
+    return 'yt-dlp was not found on PATH. Install yt-dlp and ffmpeg using the Windows setup instructions in the README.';
+  }
+  return 'yt-dlp was not found on PATH. Install yt-dlp and ffmpeg using the setup instructions in the README.';
 }
 
 function fmtDuration(seconds) {

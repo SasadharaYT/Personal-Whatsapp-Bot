@@ -24,6 +24,7 @@
 - [✨ Features](#-features)
 - [⚡ Quick Start](#-quick-start)
 - [🪟 Windows Setup Guide (yt-dlp & ffmpeg)](#-windows-setup-guide-yt-dlp--ffmpeg)
+- [🐧 Ubuntu Setup Guide (yt-dlp & ffmpeg)](#-ubuntu-setup-guide-yt-dlp--ffmpeg)
 - [📱 Pairing with WhatsApp](#-pairing-with-whatsapp)
 - [⚙️ Configuration (`.env`)](#️-configuration-env)
 - [🎮 Commands Guide](#-commands-guide)
@@ -63,7 +64,7 @@
 - **Node.js** `>= 20.0.0`
 - **npm** `>= 9.0.0`
 - A smartphone with WhatsApp installed
-- *(Optional for media features)* **yt-dlp** and **ffmpeg** (see [Windows Setup Guide](#-windows-setup-guide-yt-dlp--ffmpeg))
+- *(Optional for media features)* **yt-dlp** and **ffmpeg** (see the [Windows](#-windows-setup-guide-yt-dlp--ffmpeg) or [Ubuntu](#-ubuntu-setup-guide-yt-dlp--ffmpeg) setup guide)
 
 ### 2. Installation
 
@@ -129,6 +130,30 @@ where ffmpeg
 
 If both commands return executable paths, the bot will automatically detect and use them!
 
+## 🐧 Ubuntu Setup Guide (yt-dlp & ffmpeg)
+
+Install the YouTube tools on the same Ubuntu server and as the same user that runs the bot:
+
+```bash
+sudo apt update
+sudo apt install -y yt-dlp ffmpeg
+```
+
+Verify the executables are on the service user's `PATH`:
+
+```bash
+command -v yt-dlp
+command -v ffmpeg
+```
+
+If you run the bot with systemd, restart it after installation:
+
+```bash
+sudo systemctl restart whatsapp-bot
+```
+
+The downloader detects executables from `PATH` on both Windows and Linux.
+
 ---
 
 ## 📱 Pairing with WhatsApp
@@ -173,7 +198,7 @@ If both commands return executable paths, the bot will automatically detect and 
 | `OLLAMA_API_KEY` | Recommended | — | Ollama Cloud API key from [Ollama settings](https://ollama.com/settings/keys) |
 | `OLLAMA_MODEL` | No | `gemma4:31b-cloud` | Ollama Cloud model name |
 | `AI_ENABLED` | No | `true` | Global enable/disable switch for AI commands |
-| `PEXELS_API_KEY` | Recommended | — | Free image API key from [Pexels](https://www.pexels.com/api/) |
+| `PEXELS_API_KEY` | Needed for image search | — | Free image API key from [Pexels](https://www.pexels.com/api/) |
 | `MEDIA_ENABLED` | No | `true` | Global enable/disable switch for media downloads |
 | `MAX_MEDIA_SIZE_MB` | No | `50` | Maximum media file download size in MB |
 | `MAX_CONCURRENT_DOWNLOADS` | No | `2` | Maximum concurrent video downloads |
@@ -392,13 +417,22 @@ WantedBy=multi-user.target
 
 - Run `winget install yt-dlp.yt-dlp` in PowerShell (Admin).
 - Verify with `where yt-dlp`.
+- On Ubuntu, run `sudo apt update && sudo apt install -y yt-dlp ffmpeg` and verify with `command -v yt-dlp`.
 - Restart your terminal and bot process.
 </details>
 
 <details>
-<summary><strong>4. Ollama Cloud AI reports "API key is not configured"</strong></summary>
+<summary><strong>4. Image search reports that PEXELS_API_KEY is not configured</strong></summary>
 
-- Obtain a free API key at [Google AI Studio](https://aistudio.google.com/).
+- Get a free API key from [Pexels](https://www.pexels.com/api/).
+- Add `PEXELS_API_KEY=your_key` to the bot's `.env` file on the server.
+- Restart the bot so it loads the new environment variable.
+</details>
+
+<details>
+<summary><strong>5. Ollama Cloud AI reports "API key is not configured"</strong></summary>
+
+- Obtain an API key from [Ollama settings](https://ollama.com/settings/keys).
 - Set `OLLAMA_API_KEY=your_key` in `.env`.
 - Restart the bot.
 </details>

@@ -36,7 +36,7 @@ function ensureClient() {
   if (client) return;
 
   if (!config.imageProviderApiKey) {
-    initError = 'IMAGE_PROVIDER_API_KEY (Pexels) is not configured. Set it in your .env file.';
+    initError = 'PEXELS_API_KEY is not configured. Get a free key at https://www.pexels.com/api/ and set PEXELS_API_KEY in your .env file.';
     return;
   }
 
