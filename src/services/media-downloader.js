@@ -148,6 +148,25 @@ async function verifyExecutable(execPath, name = '') {
 }
 
 /**
+ * Get merged process environment ensuring standard bin directories are included in PATH.
+ * This is crucial on Linux when the bot runs as a systemd service or minimal container,
+ * ensuring yt-dlp can locate deno (/usr/local/bin), ffmpeg, and ffprobe.
+ */
+function getProcessEnv() {
+  if (process.platform === 'win32') return process.env;
+  const extraPaths = [
+    '/usr/local/bin',
+    '/usr/bin',
+    '/bin',
+    '/snap/bin',
+    path.join(process.env.HOME || '/root', '.local/bin'),
+  ];
+  const currentPath = process.env.PATH || '';
+  const mergedPath = [...new Set([...currentPath.split(':'), ...extraPaths])].filter(Boolean).join(':');
+  return { ...process.env, PATH: mergedPath };
+}
+
+/**
  * Run a simple command and collect output.
  *
  * @param {string}   cmd       - Command / path to execute
@@ -162,6 +181,7 @@ function runSimple(cmd, args, timeoutMs = 10_000, useShell = false) {
       shell: useShell,
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
+      env: getProcessEnv(),
     });
     let stdout = '', stderr = '';
     const timer = setTimeout(() => { proc.kill('SIGTERM'); reject(new Error('Timed out')); }, timeoutMs);
@@ -187,7 +207,10 @@ export async function getVideoInfo(url) {
       '--dump-json', '--no-download', '--no-playlist', '--no-warnings', url,
     ], 30_000);
 
-    if (r.code !== 0) return { success: false, error: classifyYtDlpError(r.stderr) };
+    if (r.code !== 0) {
+      logger.warn({ code: r.code, stderr: r.stderr, url }, 'yt-dlp info failed');
+      return { success: false, error: classifyYtDlpError(r.stderr) };
+    }
 
     const info = JSON.parse(r.stdout);
 
@@ -290,7 +313,12 @@ export async function download(url, type, senderJid, onProgress) {
 
   // ── Spawn ─────────────────────────────────────────────────────────────
   return new Promise(resolve => {
-    const proc = spawn(ytDlpPath, args, { shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    const proc = spawn(ytDlpPath, args, {
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+      env: getProcessEnv(),
+    });
     job.process = proc;
 
     const timer = setTimeout(() => { job.status = 'timeout'; proc.kill('SIGTERM'); setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 5000); }, DOWNLOAD_TIMEOUT_MS);
@@ -429,7 +457,8 @@ async function findOutputFile(expectedPath, ext) {
   } catch { return null; }
 }
 
-function classifyYtDlpError(stderr) {
+function classifyYtDlpError(stderr = '') {
+  if (!stderr) return 'Download failed. The video may be unavailable or restricted.';
   if (stderr.includes('Video unavailable') || stderr.includes('Private video')) return 'This video is unavailable or private.';
   if (stderr.includes('Sign in to confirm your age'))       return 'This video requires age verification and cannot be accessed.';
   if (stderr.includes('File is larger than max-filesize'))  return `Video exceeds the ${config.maxMediaSizeMb || 50}MB size limit. Try a shorter video.`;
@@ -437,6 +466,17 @@ function classifyYtDlpError(stderr) {
   if (stderr.includes('copyright'))                         return 'This video is restricted due to copyright.';
   if (stderr.includes('members-only'))                      return 'This video is for channel members only.';
   if (stderr.includes('premium'))                           return 'This video requires YouTube Premium.';
+  if (stderr.includes('confirm you’re not a bot') || stderr.includes('confirm you\'re not a bot')) {
+    return 'YouTube bot protection triggered on this server IP. Update yt-dlp or try again later.';
+  }
+
+  // Extract clean error message from yt-dlp if present
+  const errorLine = stderr.split(/\r?\n/).find(l => l.trim().startsWith('ERROR:'));
+  if (errorLine) {
+    const clean = errorLine.replace(/^ERROR:\s*/, '').replace(/\[[^\]]+\]\s*/, '').trim();
+    if (clean.length > 0 && clean.length < 120) return clean;
+  }
+
   return 'Download failed. The video may be unavailable or restricted.';
 }
 
