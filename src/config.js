@@ -69,7 +69,10 @@ const raw = {
   aiEnabled:            optional('AI_ENABLED', 'true'),
 
   /* Media & Image */
-  imageProviderApiKey:    optional('PEXELS_API_KEY'),
+  imageProvider:          optional('IMAGE_PROVIDER'),
+  pixabayApiKey:          optional('PIXABAY_API_KEY'),
+  pexelsApiKey:           optional('PEXELS_API_KEY'),
+  imageProviderApiKey:    optional('PIXABAY_API_KEY') || optional('PEXELS_API_KEY'),
   mediaEnabled:           optional('MEDIA_ENABLED', 'true'),
   maxMediaSizeMb:         optional('MAX_MEDIA_SIZE_MB', '50'),
   maxConcurrentDownloads: optional('MAX_CONCURRENT_DOWNLOADS', '2'),
@@ -122,7 +125,10 @@ const config = {
   aiEnabled:    raw.aiEnabled !== 'false',
 
   /* Media & Image */
+  imageProvider:          raw.imageProvider?.toLowerCase() || (raw.pixabayApiKey ? 'pixabay' : (raw.pexelsApiKey ? 'pexels' : 'pixabay')),
   imageProviderApiKey:    raw.imageProviderApiKey,
+  pixabayApiKey:          raw.pixabayApiKey,
+  pexelsApiKey:           raw.pexelsApiKey,
   mediaEnabled:           raw.mediaEnabled !== 'false',
   maxMediaSizeMb:         Math.max(1, parseInt(raw.maxMediaSizeMb, 10) || 50),
   maxConcurrentDownloads: Math.max(1, parseInt(raw.maxConcurrentDownloads, 10) || 2),

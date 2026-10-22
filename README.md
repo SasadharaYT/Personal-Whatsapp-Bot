@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  A secure, feature-rich, production-ready WhatsApp bot built with <strong>Node.js (ESM)</strong>, <strong>@whiskeysockets/baileys v7.0.0-rc14</strong>, <strong>Ollama Cloud Gemma AI</strong>, <strong>yt-dlp Media Downloader</strong>, and <strong>Pexels Image Engine</strong>.
+  A secure, feature-rich, production-ready WhatsApp bot built with <strong>Node.js (ESM)</strong>, <strong>@whiskeysockets/baileys v7.0.0-rc14</strong>, <strong>Ollama Cloud Gemma AI</strong>, <strong>yt-dlp Media Downloader</strong>, and <strong>Pixabay / Pexels Image Engine</strong>.
 </p>
 
 <p align="center">
@@ -47,7 +47,7 @@
 
 - 🧠 **Ollama Cloud Gemma AI:** Intelligent conversations using `gemma4:31b-cloud` with multi-turn context, summarization, translation, topic explanation, and per-user privacy.
 - 🎬 **YouTube Media Downloader:** Download MP4 videos and MP3 audio tracks via controlled `yt-dlp` subprocess with job queuing, size caps, and automatic temporary file cleanup.
-- 🖼️ **Pexels Wallpaper & Image Search:** Instant phone wallpapers (portrait) and high-resolution photo searches with photographer attribution and magic-byte verification.
+- 🖼️ **Pixabay & Pexels Wallpaper & Image Search:** Instant phone wallpapers (portrait) and high-resolution photo searches with photographer attribution and magic-byte verification. Works out of the box with Pixabay's instant free API.
 - 🔐 **Secure & Private:** Multi-device auth session (`auth/`), temporary files (`temp/`), and keys (`.env`) are strictly git-ignored.
 - 🛡️ **SSRF & Input Safety:** Strict URL validation, private IP blocking (RFC 1918 / localhost / cloud metadata), file magic-byte inspection, and disk quota enforcement.
 - ⏱️ **Token-Bucket Rate Limiter:** Per-user and per-group burst/replenish rate limiting across AI, media downloads, and image searches.
@@ -87,7 +87,7 @@ Open `.env` and configure your phone number and API keys:
 OWNER_NUMBERS=94710504147
 OLLAMA_API_KEY=your_ollama_api_key_here
 OLLAMA_MODEL=gemma4:31b-cloud
-PEXELS_API_KEY=your_pexels_api_key_here
+PIXABAY_API_KEY=your_pixabay_api_key_here
 ```
 
 ### 4. Start the Bot
@@ -198,7 +198,9 @@ The downloader detects executables from `PATH` on both Windows and Linux.
 | `OLLAMA_API_KEY` | Recommended | — | Ollama Cloud API key from [Ollama settings](https://ollama.com/settings/keys) |
 | `OLLAMA_MODEL` | No | `gemma4:31b-cloud` | Ollama Cloud model name |
 | `AI_ENABLED` | No | `true` | Global enable/disable switch for AI commands |
-| `PEXELS_API_KEY` | Needed for image search | — | Free image API key from [Pexels](https://www.pexels.com/api/) |
+| `PIXABAY_API_KEY` | Recommended | — | Instant free image API key from [Pixabay API Docs](https://pixabay.com/api/docs/) |
+| `PEXELS_API_KEY` | Optional | — | Legacy image API key from [Pexels](https://www.pexels.com/api/) |
+| `IMAGE_PROVIDER` | No | `pixabay` | Image search provider (`pixabay` or `pexels`) |
 | `MEDIA_ENABLED` | No | `true` | Global enable/disable switch for media downloads |
 | `MAX_MEDIA_SIZE_MB` | No | `50` | Maximum media file download size in MB |
 | `MAX_CONCURRENT_DOWNLOADS` | No | `2` | Maximum concurrent video downloads |
@@ -422,11 +424,12 @@ WantedBy=multi-user.target
 </details>
 
 <details>
-<summary><strong>4. Image search reports that PEXELS_API_KEY is not configured</strong></summary>
+<summary><strong>4. Image search reports that API key is not configured</strong></summary>
 
-- Get a free API key from [Pexels](https://www.pexels.com/api/).
-- Add `PEXELS_API_KEY=your_key` to the bot's `.env` file on the server.
-- Restart the bot so it loads the new environment variable.
+- New Pexels API registrations are paused, so use **Pixabay** (instant, free, no approval needed).
+- Sign up for a free account at [Pixabay](https://pixabay.com/) and visit [Pixabay API Docs](https://pixabay.com/api/docs/) — your API key will be displayed immediately.
+- Add `PIXABAY_API_KEY=your_key` to your `.env` file.
+- Restart the bot.
 </details>
 
 <details>

@@ -54,7 +54,7 @@ const commands = [
         const buffer = await fs.readFile(downloadRes.filePath);
         const caption = [
           `🖼 *${photo.alt || query}*`,
-          `📸 Photo by *${photo.photographer}* on Pexels`,
+          `📸 Photo by *${photo.photographer}* on ${photo.provider || 'Pixabay'}`,
           photo.photographerUrl ? `🔗 ${photo.photographerUrl}` : '',
         ].filter(Boolean).join('\n');
 
@@ -200,7 +200,7 @@ const commands = [
 
       const lines = [
         '🎨 *Wallpaper & Image Search Help*',
-        `• Status: ${status.configured ? '✅ Active (Pexels API)' : '⚠️ API Key Not Set'}`,
+        `• Status: ${status.configured ? `✅ Active (${status.provider} API)` : '⚠️ API Key Not Set'}`,
         '',
         `\`${prefix}wallpaper <category>\` — Search portrait phone wallpapers`,
         `\`${prefix}image <query>\` — Search general high-res photos`,
@@ -209,7 +209,7 @@ const commands = [
         '*Popular categories:*',
         categories.map(c => `• \`${prefix}wallpaper ${c}\``).join('\n'),
         '',
-        '_Photos provided freely by Pexels with photographer attribution._',
+        `_Photos provided freely by ${status.provider || 'Pixabay'} with photographer attribution._`,
       ];
 
       await reply(sock, ctx, lines.join('\n'));

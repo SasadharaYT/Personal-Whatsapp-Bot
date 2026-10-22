@@ -29,6 +29,7 @@ jest.unstable_mockModule('../src/services/logger.js', () => ({
   },
 }));
 
+const { default: config } = await import('../src/config.js');
 const {
   searchPhotos,
   getRandomPhotos,
@@ -136,3 +137,114 @@ describe('Image Search Service (Pexels)', () => {
     expect(res.error).toContain('unsafe');
   });
 });
+
+describe('Image Search Service (Pixabay)', () => {
+  const originalFetch = global.fetch;
+  const originalProvider = config.imageProvider;
+  const originalPixabayKey = config.pixabayApiKey;
+  const originalPexelsKey = config.pexelsApiKey;
+
+  beforeEach(() => {
+    config.imageProvider = 'pixabay';
+    config.pixabayApiKey = 'test_pixabay_key';
+    config.pexelsApiKey = '';
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    config.imageProvider = originalProvider;
+    config.pixabayApiKey = originalPixabayKey;
+    config.pexelsApiKey = originalPexelsKey;
+  });
+
+  it('searches photos via Pixabay and normalises results', async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        total: 50,
+        totalHits: 50,
+        hits: [
+          {
+            id: 8888,
+            imageWidth: 2000,
+            imageHeight: 1500,
+            user: 'pixabay_artist',
+            user_id: 1234,
+            pageURL: 'https://pixabay.com/photos/nature-8888/',
+            tags: 'nature, landscape, trees',
+            webformatURL: 'https://pixabay.com/get/sample_640.jpg',
+            largeImageURL: 'https://pixabay.com/get/sample_1280.jpg',
+            views: 12000,
+            likes: 450,
+          },
+        ],
+      }),
+    });
+
+    const res = await searchPhotos('forest', 'user2@s.whatsapp.net', { orientation: 'portrait' });
+    expect(res.success).toBe(true);
+    expect(res.provider).toBe('Pixabay');
+    expect(res.photos.length).toBe(1);
+    expect(res.photos[0].photographer).toBe('pixabay_artist');
+    expect(res.photos[0].alt).toBe('nature, landscape, trees');
+    expect(res.photos[0].src.large).toContain('sample_1280.jpg');
+
+    // Verify fetch URL passed vertical orientation
+    const fetchUrl = global.fetch.mock.calls[0][0];
+    expect(fetchUrl).toContain('orientation=vertical');
+    expect(fetchUrl).toContain('q=forest');
+  });
+
+  it('handles empty Pixabay search results cleanly', async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ total: 0, totalHits: 0, hits: [] }),
+    });
+
+    const res = await searchPhotos('superrandomnonexistentquery', 'user2@s.whatsapp.net');
+    expect(res.success).toBe(false);
+    expect(res.error).toContain('No images found');
+  });
+
+  it('fetches curated random photos via Pixabay', async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        total: 100,
+        totalHits: 100,
+        hits: [
+          {
+            id: 9999,
+            imageWidth: 1920,
+            imageHeight: 1080,
+            user: 'curated_user',
+            user_id: 5678,
+            pageURL: 'https://pixabay.com/photos/sample-9999/',
+            tags: 'curated, beautiful',
+            webformatURL: 'https://pixabay.com/get/sample_curated_640.jpg',
+            largeImageURL: 'https://pixabay.com/get/sample_curated_1280.jpg',
+          },
+        ],
+      }),
+    });
+
+    const res = await getRandomPhotos('user2@s.whatsapp.net', 1);
+    expect(res.success).toBe(true);
+    expect(res.provider).toBe('Pixabay');
+    expect(res.photos.length).toBe(1);
+    expect(res.photos[0].photographer).toBe('curated_user');
+
+    const fetchUrl = global.fetch.mock.calls[0][0];
+    expect(fetchUrl).toContain('editors_choice=true');
+  });
+
+  it('reports Pixabay as active provider in service status', () => {
+    const status = getImageServiceStatus();
+    expect(status.provider).toBe('Pixabay');
+    expect(status.configured).toBe(true);
+  });
+});
+
