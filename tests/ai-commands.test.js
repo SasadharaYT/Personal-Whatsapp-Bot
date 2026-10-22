@@ -12,11 +12,11 @@ const mockClearHistory = jest.fn();
 const mockGetStatus = jest.fn().mockReturnValue({
   enabled: true,
   configured: true,
-  model: 'gemini-2.0-flash',
+  model: 'gemma4:31b-cloud',
   activeConversations: 0,
 });
 
-jest.unstable_mockModule('../src/services/gemini.js', () => ({
+jest.unstable_mockModule('../src/services/ollama.js', () => ({
   chat: mockChat,
   translate: mockTranslate,
   summarize: mockSummarize,
@@ -74,7 +74,7 @@ describe('AI Commands Module', () => {
     expect(sentText).toContain('Usage:');
   });
 
-  it('ai command chats with Gemini when text is provided', async () => {
+  it('ai command chats with Gemma when text is provided', async () => {
     const cmd = aiCommands.find(c => c.name === 'ai');
     const { sock, ctx, prefix } = makeContext(['What', 'is', 'gravity?']);
     mockChat.mockResolvedValueOnce({ success: true, text: 'Gravity is a fundamental force.' });
@@ -134,7 +134,7 @@ describe('AI Commands Module', () => {
 
     await cmd.execute({ sock, ctx });
     const sentText = sock.sendMessage.mock.calls[0][1].text;
-    expect(sentText).toContain('Gemini AI Status');
-    expect(sentText).toContain('gemini-2.0-flash');
+    expect(sentText).toContain('Ollama Cloud AI Status');
+    expect(sentText).toContain('gemma4:31b-cloud');
   });
 });

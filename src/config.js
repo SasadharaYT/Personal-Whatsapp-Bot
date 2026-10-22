@@ -64,8 +64,8 @@ const raw = {
   antilinkWarnLimit:    optional('ANTILINK_WARN_LIMIT', '3'),
 
   /* AI */
-  geminiApiKey:         optional('GEMINI_API_KEY'),
-  geminiModel:          optional('GEMINI_MODEL', 'gemini-2.0-flash'),
+  ollamaApiKey:         optional('OLLAMA_API_KEY'),
+  ollamaModel:          optional('OLLAMA_MODEL', 'gemma4:31b-cloud'),
   aiEnabled:            optional('AI_ENABLED', 'true'),
 
   /* Media & Image */
@@ -117,8 +117,8 @@ const config = {
   antilinkWarnLimit: Math.max(1, parseInt(raw.antilinkWarnLimit, 10) || 3),
 
   /* AI */
-  geminiApiKey: raw.geminiApiKey,
-  geminiModel:  raw.geminiModel || 'gemini-2.0-flash',
+  ollamaApiKey: raw.ollamaApiKey,
+  ollamaModel:  raw.ollamaModel || 'gemma4:31b-cloud',
   aiEnabled:    raw.aiEnabled !== 'false',
 
   /* Media & Image */

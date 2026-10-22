@@ -1,10 +1,10 @@
 /**
- * commands/ai.js — Gemini AI commands.
+ * commands/ai.js — AI commands powered by Ollama Cloud.
  *
  * Commands: ai, ask, summarize, translate, explain, clearai, aistatus, aihelp
  */
 
-import { chat, translate, summarize, explain, clearHistory, getStatus } from '../services/gemini.js';
+import { chat, translate, summarize, explain, clearHistory, getStatus } from '../services/ollama.js';
 import { reply } from '../utils/message.js';
 
 /* ── Helpers ──────────────────────────────────────────────────────────── */
@@ -30,11 +30,11 @@ function extractText(ctx, args) {
 
 const commands = [
 
-  /* ── ai / ask / gemini ── */
+  /* ── ai / ask ── */
   {
     name:        'ai',
-    aliases:     ['ask', 'gemini', 'chat'],
-    description: 'Chat with Google Gemini AI. Multi-turn conversation is preserved.',
+    aliases:     ['ask', 'chat', 'gemini'],
+    description: 'Chat with Gemma via Ollama Cloud. Multi-turn conversation is preserved.',
     category:    'AI',
     groupOnly:   false,
     adminOnly:   false,
@@ -63,7 +63,7 @@ const commands = [
         return;
       }
 
-      await reply(sock, ctx, `🤖 *Gemini:*\n\n${res.text}`);
+      await reply(sock, ctx, `🤖 *Gemma:*\n\n${res.text}`);
     },
   },
 
@@ -187,7 +187,7 @@ const commands = [
   {
     name:        'clearai',
     aliases:     ['resetai', 'forget'],
-    description: 'Clear your Gemini conversation history.',
+    description: 'Clear your AI conversation history.',
     category:    'AI',
     groupOnly:   false,
     adminOnly:   false,
@@ -203,8 +203,8 @@ const commands = [
   /* ── aistatus ── */
   {
     name:        'aistatus',
-    aliases:     ['geministatus'],
-    description: 'Check Gemini AI service status and configuration.',
+    aliases:     ['ollamastatus', 'geministatus'],
+    description: 'Check Ollama Cloud AI service status and configuration.',
     category:    'AI',
     groupOnly:   false,
     adminOnly:   false,
@@ -213,7 +213,7 @@ const commands = [
     async execute({ sock, ctx }) {
       const status = getStatus();
       const lines = [
-        '🤖 *Gemini AI Status*',
+        '🤖 *Ollama Cloud AI Status*',
         `• Status: ${status.enabled ? '🟢 Enabled' : '🔴 Disabled'}`,
         `• API Key: ${status.configured ? '✅ Configured' : '❌ Missing'}`,
         `• Model: \`${status.model}\``,
@@ -241,9 +241,9 @@ const commands = [
     cooldown:    5,
     async execute({ sock, ctx, prefix }) {
       const lines = [
-        '🤖 *Gemini AI Help & Guide*',
+        '🤖 *Ollama Cloud AI Help & Guide*',
         '',
-        `\`${prefix}ai <query>\` — Chat with Gemini (keeps conversation context)`,
+        `\`${prefix}ai <query>\` — Chat with Gemma (keeps conversation context)`,
         `\`${prefix}summarize <text>\` — Summarise text or quoted message`,
         `\`${prefix}translate <lang> <text>\` — Translate to any language`,
         `\`${prefix}explain <topic>\` — Simple explanations of concepts`,

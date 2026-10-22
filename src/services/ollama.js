@@ -1,7 +1,7 @@
 /**
- * gemini.js — Google Gemini AI service (isolated from commands).
+ * ollama.js — Ollama Cloud AI service (isolated from commands).
  *
- * Wraps the official @google/genai SDK with:
+ * Uses Ollama's OpenAI-compatible chat API with:
  *  - Per-user, per-group conversation history (bounded, opt-in)
  *  - Rate limiting, input length limits, and request timeouts
  *  - Group-level enable/disable via database
@@ -9,7 +9,6 @@
  *  - Never exposes system prompts, credentials, or internal config
  */
 
-import { GoogleGenAI } from '@google/genai';
 import config from '../config.js';
 import logger from './logger.js';
 import { aiLimiter } from './rate-limiter.js';
@@ -18,7 +17,8 @@ import { read, write } from '../database/index.js';
 
 /* ── Constants ─────────────────────────────────────────────────────────── */
 
-const MODEL = 'gemini-2.0-flash';
+const MODEL = config.ollamaModel;
+const API_URL = 'https://ollama.com/v1/chat/completions';
 
 // System prompt — kept private; never revealed to users
 const SYSTEM_PROMPT = [
@@ -36,8 +36,6 @@ const AI_SETTINGS_DB_KEY = 'ai_group_settings';
 
 /* ── State ─────────────────────────────────────────────────────────────── */
 
-/** @type {GoogleGenAI|null} */
-let ai = null;
 let initialized = false;
 let initError = null;
 
@@ -54,19 +52,13 @@ function ensureInitialized() {
   if (initialized) return;
   initialized = true;
 
-  if (!config.geminiApiKey) {
-    initError = 'GEMINI_API_KEY is not configured. Set it in your .env file.';
+  if (!config.ollamaApiKey) {
+    initError = 'OLLAMA_API_KEY is not configured. Set it in your .env file.';
     return;
   }
 
-  try {
-    ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
-    initError = null;
-    logger.info('Gemini AI service initialised');
-  } catch (err) {
-    initError = `Failed to initialise Gemini: ${err.message}`;
-    logger.error({ err }, 'Gemini AI init error');
-  }
+  initError = null;
+  logger.info('Ollama Cloud AI service initialised');
 }
 
 /* ── History management ────────────────────────────────────────────────── */
@@ -149,7 +141,7 @@ export async function setAiForGroup(groupJid, enabled) {
 /* ── Core API call ─────────────────────────────────────────────────────── */
 
 /**
- * Send a message to Gemini and get a response.
+ * Send a message to Ollama Cloud and get a response.
  *
  * @param {string}  senderJid   - User JID for history and rate limiting
  * @param {string|null} groupJid - Group JID (null for DM)
@@ -191,31 +183,50 @@ export async function chat(senderJid, groupJid, userMessage, opts = {}) {
   }
 
   try {
-    // Build conversation contents
+    // Build conversation messages
     const history  = opts.useHistory !== false ? getHistory(senderJid, groupJid) : [];
-    const contents = [
-      ...history,
-      { role: 'user', parts: [{ text: sanitized }] },
+    const messages = [
+      { role: 'system', content: opts.systemPrompt || SYSTEM_PROMPT },
+      ...history.map(message => ({
+        role: message.role === 'model' ? 'assistant' : message.role,
+        content: message.parts.map(part => part.text).join(''),
+      })),
+      { role: 'user', content: sanitized },
     ];
 
-    // Call Gemini with a timeout via Promise.race
-    const responsePromise = ai.models.generateContent({
-      model: opts.model || MODEL,
-      contents,
-      config: {
-        systemInstruction: opts.systemPrompt || SYSTEM_PROMPT,
-        maxOutputTokens: 2048,
-        temperature: opts.temperature ?? 0.7,
-      },
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    let response;
+    let result;
+    try {
+      response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.ollamaApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: opts.model || MODEL,
+          messages,
+          max_tokens: 2048,
+          temperature: opts.temperature ?? 0.7,
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+      result = await response.json();
+    } finally {
+      clearTimeout(timeout);
+    }
 
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(Object.assign(new Error('AI request timed out'), { name: 'TimeoutError' })), 30_000)
-    );
+    if (!response.ok) {
+      const message = result?.error?.message || `Ollama API returned HTTP ${response.status}`;
+      const err = new Error(message);
+      err.status = response.status;
+      throw err;
+    }
 
-    const response = await Promise.race([responsePromise, timeoutPromise]);
-
-    const responseText = response?.text?.trim();
+    const responseText = result?.choices?.[0]?.message?.content?.trim();
     if (!responseText) {
       return { success: false, error: 'The AI returned an empty response. Please try again.' };
     }
@@ -232,15 +243,15 @@ export async function chat(senderJid, groupJid, userMessage, opts = {}) {
     return { success: true, text: truncated };
 
   } catch (err) {
-    logger.error({ err, sender: senderJid }, 'Gemini API error');
-    return { success: false, error: classifyGeminiError(err) };
+    logger.error({ err, sender: senderJid }, 'Ollama Cloud API error');
+    return { success: false, error: classifyOllamaError(err) };
   }
 }
 
 /* ── Convenience wrappers ──────────────────────────────────────────────── */
 
 /**
- * Translate text using Gemini (no history).
+ * Translate text using Ollama Cloud (no history).
  */
 export async function translate(senderJid, text, targetLanguage) {
   const prompt = `Translate the following text to ${targetLanguage}. Provide only the translation with no explanations:\n\n${text}`;
@@ -248,7 +259,7 @@ export async function translate(senderJid, text, targetLanguage) {
 }
 
 /**
- * Summarise text using Gemini (no history).
+ * Summarise text using Ollama Cloud (no history).
  */
 export async function summarize(senderJid, text) {
   const prompt = `Summarise the following text concisely:\n\n${text}`;
@@ -256,7 +267,7 @@ export async function summarize(senderJid, text) {
 }
 
 /**
- * Explain a topic using Gemini (no history).
+ * Explain a topic using Ollama Cloud (no history).
  */
 export async function explain(senderJid, topic) {
   const prompt = `Explain the following topic clearly and concisely, suitable for a chat message. Use simple language:\n\n${topic}`;
@@ -272,7 +283,7 @@ export function getStatus() {
   ensureInitialized();
   return {
     enabled:             config.aiEnabled,
-    configured:          !!config.geminiApiKey,
+    configured:          !!config.ollamaApiKey,
     error:               initError,
     activeConversations: conversationHistory.size,
     model:               MODEL,
@@ -281,25 +292,22 @@ export function getStatus() {
 
 /* ── Error classification ──────────────────────────────────────────────── */
 
-function classifyGeminiError(err) {
+function classifyOllamaError(err) {
   const msg = err.message ?? String(err);
 
-  if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
-    return 'The Gemini API key is invalid. Please check your configuration.';
+  if (err.status === 401 || err.status === 403 || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('invalid api key')) {
+    return 'The Ollama API key is invalid or does not have permission. Please check your configuration.';
   }
-  if (msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota')) {
-    return 'AI quota exhausted. Please try again later.';
+  if (err.status === 429 || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('rate limit')) {
+    return 'The Ollama Cloud rate limit or quota was reached. Please try again later.';
   }
-  if (msg.includes('PERMISSION_DENIED')) {
-    return 'The Gemini API key does not have permission for this model.';
-  }
-  if (err.name === 'TimeoutError' || err.name === 'AbortError' || msg.includes('timed out')) {
+  if (err.name === 'AbortError' || msg.includes('timed out')) {
     return 'The AI request timed out. Please try a shorter question.';
   }
-  if (msg.includes('SAFETY') || msg.includes('blocked')) {
+  if (msg.toLowerCase().includes('safety') || msg.toLowerCase().includes('blocked')) {
     return 'The AI declined to respond due to safety filters. Please rephrase your question.';
   }
-  if (msg.includes('NOT_FOUND') || msg.includes('model')) {
+  if (err.status === 404 || msg.toLowerCase().includes('model')) {
     return 'The configured AI model is unavailable. The bot owner should check the model name.';
   }
   if (msg.includes('ENOTFOUND') || msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {

@@ -8,7 +8,7 @@ import os from 'os';
 import config from '../config.js';
 import { reply, formatUptime } from '../utils/message.js';
 import { stats } from '../handler.js';
-import { getStatus as getAiStatus, setAiForGroup, isAiEnabledForGroup } from '../services/gemini.js';
+import { getStatus as getAiStatus, setAiForGroup, isAiEnabledForGroup } from '../services/ollama.js';
 import { getActiveJobs, cancelJob, getDownloaderStatus } from '../services/media-downloader.js';
 import { getAvailableDiskSpace } from '../services/safety.js';
 import { getImageServiceStatus } from '../services/image-search.js';
@@ -57,7 +57,7 @@ const commands = [
         `  • Heap Used: ${formatBytes(mem.heapUsed)} / ${formatBytes(mem.heapTotal)}`,
         `💾 *Disk Space Available:* ${formatBytes(diskSpace)}`,
         '',
-        `🤖 *Gemini AI:* ${aiStatus.enabled && aiStatus.configured ? '🟢 Online' : '🔴 Offline'} (${aiStatus.model})`,
+        `🤖 *Ollama Cloud AI:* ${aiStatus.enabled && aiStatus.configured ? '🟢 Online' : '🔴 Offline'} (${aiStatus.model})`,
         `🎬 *yt-dlp:* ${dlStatus.ytDlpInstalled ? '🟢 Installed' : '🔴 Not Found'}`,
         `🎵 *ffmpeg:* ${dlStatus.ffmpegInstalled ? '🟢 Installed' : '⚠️ Not Found (audio limited)'}`,
         `🖼 *Image Search:* ${imgStatus.configured ? '🟢 Configured' : '⚠️ No API Key'}`,

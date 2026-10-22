@@ -37,8 +37,8 @@ jest.unstable_mockModule('../src/services/image-search.js', () => ({
   getCategories: mockGetCategories,
 }));
 
-jest.unstable_mockModule('../src/services/gemini.js', () => ({
-  getStatus: jest.fn().mockReturnValue({ enabled: true, configured: true, model: 'gemini-2.0-flash' }),
+jest.unstable_mockModule('../src/services/ollama.js', () => ({
+  getStatus: jest.fn().mockReturnValue({ enabled: true, configured: true, model: 'gemma4:31b-cloud' }),
   setAiForGroup: jest.fn(),
   isAiEnabledForGroup: jest.fn().mockResolvedValue(true),
 }));
@@ -140,7 +140,7 @@ describe('System Commands Module', () => {
     await cmd.execute({ sock, ctx });
     const sentText = sock.sendMessage.mock.calls[0][1].text;
     expect(sentText).toContain('System Health');
-    expect(sentText).toContain('Gemini AI:');
+    expect(sentText).toContain('Ollama Cloud AI:');
     expect(sentText).toContain('yt-dlp:');
   });
 

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  A secure, feature-rich, production-ready WhatsApp bot built with <strong>Node.js (ESM)</strong>, <strong>@whiskeysockets/baileys v7.0.0-rc14</strong>, <strong>Google Gemini AI</strong>, <strong>yt-dlp Media Downloader</strong>, and <strong>Pexels Image Engine</strong>.
+  A secure, feature-rich, production-ready WhatsApp bot built with <strong>Node.js (ESM)</strong>, <strong>@whiskeysockets/baileys v7.0.0-rc14</strong>, <strong>Ollama Cloud Gemma AI</strong>, <strong>yt-dlp Media Downloader</strong>, and <strong>Pexels Image Engine</strong>.
 </p>
 
 <p align="center">
@@ -28,7 +28,7 @@
 - [⚙️ Configuration (`.env`)](#️-configuration-env)
 - [🎮 Commands Guide](#-commands-guide)
   - [1. General Commands](#1-general-commands-everyone)
-  - [2. Gemini AI Commands](#2-gemini-ai-commands)
+  - [2. Ollama Cloud AI Commands](#2-ollama-cloud-ai-commands)
   - [3. YouTube Media Commands](#3-youtube-media-commands)
   - [4. Image & Wallpaper Commands](#4-image--wallpaper-commands)
   - [5. System & Health Commands](#5-system--health-commands)
@@ -44,7 +44,7 @@
 
 ## ✨ Features
 
-- 🧠 **Google Gemini AI:** Intelligent conversations using the official `@google/genai` SDK with multi-turn context, summarization, translation, topic explanation, and per-user privacy.
+- 🧠 **Ollama Cloud Gemma AI:** Intelligent conversations using `gemma4:31b-cloud` with multi-turn context, summarization, translation, topic explanation, and per-user privacy.
 - 🎬 **YouTube Media Downloader:** Download MP4 videos and MP3 audio tracks via controlled `yt-dlp` subprocess with job queuing, size caps, and automatic temporary file cleanup.
 - 🖼️ **Pexels Wallpaper & Image Search:** Instant phone wallpapers (portrait) and high-resolution photo searches with photographer attribution and magic-byte verification.
 - 🔐 **Secure & Private:** Multi-device auth session (`auth/`), temporary files (`temp/`), and keys (`.env`) are strictly git-ignored.
@@ -84,7 +84,8 @@ Open `.env` and configure your phone number and API keys:
 
 ```dotenv
 OWNER_NUMBERS=94710504147
-GEMINI_API_KEY=your_gemini_api_key_here
+OLLAMA_API_KEY=your_ollama_api_key_here
+OLLAMA_MODEL=gemma4:31b-cloud
 PEXELS_API_KEY=your_pexels_api_key_here
 ```
 
@@ -169,8 +170,8 @@ If both commands return executable paths, the bot will automatically detect and 
 | `AUTO_READ` | No | `false` | Automatically send blue read receipts |
 | `MARK_ONLINE` | No | `true` | Show account as online when socket connects |
 | `ANTILINK_WARN_LIMIT` | No | `3` | Max warnings before auto-kicking link offenders |
-| `GEMINI_API_KEY` | Recommended | — | Google Gemini API key from [Google AI Studio](https://aistudio.google.com/) |
-| `GEMINI_MODEL` | No | `gemini-2.0-flash` | Gemini model name |
+| `OLLAMA_API_KEY` | Recommended | — | Ollama Cloud API key from [Ollama settings](https://ollama.com/settings/keys) |
+| `OLLAMA_MODEL` | No | `gemma4:31b-cloud` | Ollama Cloud model name |
 | `AI_ENABLED` | No | `true` | Global enable/disable switch for AI commands |
 | `PEXELS_API_KEY` | Recommended | — | Free image API key from [Pexels](https://www.pexels.com/api/) |
 | `MEDIA_ENABLED` | No | `true` | Global enable/disable switch for media downloads |
@@ -198,17 +199,17 @@ If both commands return executable paths, the bot will automatically detect and 
 
 ---
 
-### 2. Gemini AI Commands
-Powered by Google Gemini 2.0. Supports conversational context, quoted message inputs, and automatic safety filtration.
+### 2. Ollama Cloud AI Commands
+Powered by Gemma 4 31B through Ollama Cloud. Supports conversational context, quoted message inputs, and automatic safety filtration.
 
 | Command | Aliases | Description |
 |---|---|---|
-| `.ai <prompt>` | `ask`, `gemini`, `chat` | Chat with Gemini (conversation history is preserved) |
+| `.ai <prompt>` | `ask`, `gemini`, `chat` | Chat with Gemma (conversation history is preserved) |
 | `.summarize [text]` | `summary`, `sum` | Summarise provided text or a quoted message |
 | `.translate <lang> [text]` | `tr` | Translate text or a quoted message to any language |
 | `.explain <topic>` | `eli5` | Explain a concept in simple, accessible language |
-| `.clearai` | `resetai`, `forget` | Reset your conversation history with Gemini |
-| `.aistatus` | `geministatus` | View Gemini service status, model, and active sessions |
+| `.clearai` | `resetai`, `forget` | Reset your AI conversation history |
+| `.aistatus` | `geministatus` | View Ollama Cloud status, model, and active sessions |
 | `.aihelp` | — | Guide and examples for AI commands |
 
 ---
@@ -314,7 +315,7 @@ Restricted exclusively to phone numbers listed in `OWNER_NUMBERS`.
 - **File Magic-Byte Inspection:** Verifies downloaded files match expected binary signatures (JPEG, PNG, WebP, MP4, MP3) prior to saving or sending.
 - **Disk Space Safeguards:** Checks partition free space before allowing new downloads (requires ≥ 500MB free).
 - **Automatic Temp Cleanup:** Downloads are stored in `temp/` with unguessable random names and deleted immediately in `finally` blocks on success, failure, or cancellation.
-- **Prompt Isolation:** Gemini AI system prompts are strictly isolated in service logic and never returned to users.
+- **Prompt Isolation:** AI system prompts are strictly isolated in service logic and never returned to users.
 - **Rate Limiting:** Token-bucket rate limiters prevent API quota exhaustion or denial of service across AI, downloads, and image searches.
 
 ---
@@ -395,10 +396,10 @@ WantedBy=multi-user.target
 </details>
 
 <details>
-<summary><strong>4. Gemini AI reports "API key is not configured"</strong></summary>
+<summary><strong>4. Ollama Cloud AI reports "API key is not configured"</strong></summary>
 
 - Obtain a free API key at [Google AI Studio](https://aistudio.google.com/).
-- Set `GEMINI_API_KEY=your_key` in `.env`.
+- Set `OLLAMA_API_KEY=your_key` in `.env`.
 - Restart the bot.
 </details>
 

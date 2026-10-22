@@ -11,10 +11,9 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit",
-    "check": "node --check src/index.js src/config.js src/connection.js src/handler.js src/database/index.js src/services/settings.js src/services/permissions.js src/services/logger.js src/services/safety.js src/services/rate-limiter.js src/services/gemini.js src/services/image-search.js src/services/media-downloader.js src/utils/message.js src/commands/general.js src/commands/group.js src/commands/admin.js src/commands/owner.js src/commands/ai.js src/commands/media.js src/commands/image.js src/commands/system.js src/events/messages.js src/events/connection.js src/events/group-updates.js"
+    "check": "node --check src/index.js src/config.js src/connection.js src/handler.js src/database/index.js src/services/settings.js src/services/permissions.js src/services/logger.js src/services/safety.js src/services/rate-limiter.js src/services/ollama.js src/services/image-search.js src/services/media-downloader.js src/utils/message.js src/commands/general.js src/commands/group.js src/commands/admin.js src/commands/owner.js src/commands/ai.js src/commands/media.js src/commands/image.js src/commands/system.js src/events/messages.js src/events/connection.js src/events/group-updates.js"
   },
   "dependencies": {
-    "@google/genai": "^2.30.0",
     "@hapi/boom": "^9.1.4",
     "@whiskeysockets/baileys": "7.0.0-rc14",
     "dotenv": "^16.4.5",
