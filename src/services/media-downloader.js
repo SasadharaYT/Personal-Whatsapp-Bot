@@ -42,46 +42,120 @@ let execsChecked = false;
 /* ── Executable discovery ──────────────────────────────────────────────── */
 
 /**
- * Find yt-dlp and ffmpeg on the system PATH.
+ * Common fallback paths where yt-dlp / ffmpeg may live on Linux
+ * (pip, pipx, snap, manual /usr/local installs).
+ */
+const LINUX_FALLBACK_PATHS = {
+  'yt-dlp': [
+    '/usr/bin/yt-dlp',
+    '/usr/local/bin/yt-dlp',
+    '/snap/bin/yt-dlp',
+    path.join(process.env.HOME || '/root', '.local/bin/yt-dlp'),
+  ],
+  ffmpeg: [
+    '/usr/bin/ffmpeg',
+    '/usr/local/bin/ffmpeg',
+    '/snap/bin/ffmpeg',
+  ],
+};
+
+/**
+ * Find yt-dlp and ffmpeg on the system PATH (or well-known fallback paths).
  * Called lazily; results are cached.
+ *
+ * On Linux we use `command -v` via shell instead of `which`, because `which`
+ * is not installed on minimal Ubuntu/Debian images, whereas `command -v` is a
+ * POSIX shell built-in guaranteed to exist.
  */
 async function findExecutables() {
   if (execsChecked) return;
   execsChecked = true;
 
-  const lookupCommand = process.platform === 'win32' ? 'where.exe' : 'which';
-  const executableNames = process.platform === 'win32'
-    ? ['yt-dlp', 'yt-dlp.exe']
-    : ['yt-dlp'];
+  const isWin = process.platform === 'win32';
 
-  for (const name of executableNames) {
+  ytDlpPath  = await locateExecutable('yt-dlp',  isWin);
+  ffmpegPath = await locateExecutable('ffmpeg', isWin);
+}
+
+/**
+ * Locate a single executable by name.
+ *
+ * Strategy (in order):
+ *  1. PATH lookup  (`where.exe` on Windows, `command -v` via shell on Linux)
+ *  2. Fallback path probing (Linux only — pip, pipx, snap, /usr/local)
+ *  3. Quick `--version` validation to confirm the binary actually runs
+ *
+ * @param {string} name   - Executable base name (e.g. 'yt-dlp')
+ * @param {boolean} isWin - true on Windows
+ * @returns {Promise<string|null>} Resolved absolute path, or null.
+ */
+async function locateExecutable(name, isWin) {
+  const candidates = isWin ? [name, `${name}.exe`] : [name];
+
+  /* ── 1. PATH lookup ──────────────────────────────────────────────────── */
+  for (const candidate of candidates) {
     try {
-      const r = await runSimple(lookupCommand, [name], 5000);
+      const r = isWin
+        ? await runSimple('where.exe', [candidate], 5000)
+        : await runSimple('sh', ['-c', `command -v ${candidate}`], 5000, true);
+
       if (r.code === 0 && r.stdout.trim()) {
-        ytDlpPath = r.stdout.trim().split(/\r?\n/)[0].trim();
-        logger.info({ path: ytDlpPath }, 'Found yt-dlp');
-        break;
+        const found = r.stdout.trim().split(/\r?\n/)[0].trim();
+        if (await verifyExecutable(found)) {
+          logger.info({ path: found }, `Found ${name}`);
+          return found;
+        }
       }
-    } catch { /* continue */ }
+    } catch { /* continue to next candidate */ }
   }
 
-  const ffmpegNames = process.platform === 'win32' ? ['ffmpeg', 'ffmpeg.exe'] : ['ffmpeg'];
-  for (const name of ffmpegNames) {
-    try {
-      const r = await runSimple(lookupCommand, [name], 5000);
-      if (r.code === 0 && r.stdout.trim()) {
-        ffmpegPath = r.stdout.trim().split(/\r?\n/)[0].trim();
-        logger.info({ path: ffmpegPath }, 'Found ffmpeg');
-        break;
-      }
-    } catch { /* continue */ }
+  /* ── 2. Fallback paths (Linux only) ──────────────────────────────────── */
+  if (!isWin && LINUX_FALLBACK_PATHS[name]) {
+    for (const fallback of LINUX_FALLBACK_PATHS[name]) {
+      try {
+        await fs.access(fallback, fs.constants?.X_OK ?? 1 /* fs.constants.X_OK */);
+        if (await verifyExecutable(fallback)) {
+          logger.info({ path: fallback }, `Found ${name} at fallback path`);
+          return fallback;
+        }
+      } catch { /* not here, try next */ }
+    }
+  }
+
+  logger.warn(`${name} not found on PATH or fallback locations`);
+  return null;
+}
+
+/**
+ * Quick smoke-test: run `<executable> --version` and check exit code 0.
+ * Catches cases where the file exists but is not actually executable
+ * (e.g. broken symlink, wrong architecture).
+ */
+async function verifyExecutable(execPath) {
+  try {
+    const r = await runSimple(execPath, ['--version'], 5000);
+    return r.code === 0;
+  } catch {
+    return false;
   }
 }
 
-/** Run a simple command and collect output. */
-function runSimple(cmd, args, timeoutMs = 10_000) {
+/**
+ * Run a simple command and collect output.
+ *
+ * @param {string}   cmd       - Command / path to execute
+ * @param {string[]} args      - Arguments
+ * @param {number}   timeoutMs - Max wait (default 10 s)
+ * @param {boolean}  useShell  - If true, spawn via system shell (needed for
+ *                               shell built-ins like `command -v` on Linux)
+ */
+function runSimple(cmd, args, timeoutMs = 10_000, useShell = false) {
   return new Promise((resolve, reject) => {
-    const proc = spawn(cmd, args, { shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
+    const proc = spawn(cmd, args, {
+      shell: useShell,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
     let stdout = '', stderr = '';
     const timer = setTimeout(() => { proc.kill('SIGTERM'); reject(new Error('Timed out')); }, timeoutMs);
     proc.stdout.on('data', d => { stdout += d; });
